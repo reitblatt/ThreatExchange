@@ -23,7 +23,7 @@ from threatexchange.signal_type.signal_base import FileHasher, BytesHasher, Sign
 
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.utils import flask_utils
-from OpenMediaMatch.schemas.hashing import HashRequest, HashResponse
+from OpenMediaMatch.schemas.hashing import HashPostRequest, HashRequest, HashResponse
 from OpenMediaMatch.schemas.shared import ErrorResponse
 
 logger = logging.getLogger(__name__)
@@ -202,11 +202,15 @@ def hash_url_content(
     tags=[Tag(name="Hashing")],
     responses={"200": HashResponse, "400": ErrorResponse},
     summary="Hash uploaded file",
-    description="Calculate hash for uploaded file via multipart/form-data",
+    description="Calculate hash for an uploaded file via multipart/form-data",
 )
-def hash_media_post() -> dict[str, str]:
+def hash_media_post(form: HashPostRequest) -> dict[str, str]:
     """
     Calculate the hash for the provided file.
+
+    The ``form`` parameter binds the multipart/form-data body so it is described
+    in the OpenAPI spec; the file is read from ``request.files`` (keyed by
+    content type) by ``hash_media_from_form_data``.
     """
     result = hash_media_from_form_data()
     response = HashResponse(**result)

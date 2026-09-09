@@ -1,7 +1,10 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import io
+
 import pytest
 from unittest.mock import Mock, patch
+from PIL import Image
 
 from OpenMediaMatch.blueprints.hashing import DEFAULT_MAX_REMOTE_FILE_SIZE, is_valid_url
 from OpenMediaMatch.tests.utils import app, client
@@ -9,6 +12,18 @@ from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
+
+
+def _jpeg_bytes() -> bytes:
+    img = Image.new("RGB", (64, 64))
+    pixels = img.load()
+    assert pixels is not None
+    for x in range(64):
+        for y in range(64):
+            pixels[x, y] = (255, 255, 255) if (x // 8 + y // 8) % 2 else (0, 0, 0)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    return buf.getvalue()
 
 
 def test_valid_urls(app):
@@ -194,3 +209,30 @@ def test_content_length_validation_misconfiguration(mock_get, client, app):
         assert "Service misconfigured, see logs for details" in response.get_data(
             as_text=True
         )
+
+
+def test_hash_post_multipart_upload(client):
+    """A multipart/form-data upload under a content-type field name is hashed."""
+    image = _jpeg_bytes()
+    resp = client.post(
+        "/h/hash",
+        data={"photo": (io.BytesIO(image), "checker.jpg")},
+        content_type="multipart/form-data",
+    )
+    assert resp.status_code == 200, resp.get_data(as_text=True)
+    assert set(resp.get_json().keys()) == {"pdq"}
+
+
+def test_hash_post_no_file_is_400(client):
+    resp = client.post("/h/hash")
+    assert resp.status_code == 400
+
+
+def test_openapi_documents_multipart_form_data_for_hash_post(client):
+    spec = client.get("/openapi/openapi.json").get_json()
+    request_body = spec["paths"]["/h/hash"]["post"]["requestBody"]
+    assert "multipart/form-data" in request_body["content"]
+    ref = request_body["content"]["multipart/form-data"]["schema"]["$ref"]
+    assert ref.endswith("/HashPostRequest")
+    props = spec["components"]["schemas"]["HashPostRequest"]["properties"]
+    assert set(props) == {"photo", "video"}

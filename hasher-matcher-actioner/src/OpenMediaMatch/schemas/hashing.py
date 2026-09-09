@@ -2,6 +2,7 @@
 
 from typing import Optional
 
+from flask_openapi3 import FileStorage
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -24,7 +25,16 @@ class HashResponse(BaseModel):
 
 
 class HashPostRequest(BaseModel):
-    """Request schema for hashing uploaded files."""
+    """
+    multipart/form-data body for ``POST /h/hash``.
 
-    # File uploads are handled separately in flask-openapi3
-    pass
+    A single file is uploaded under a field named for its content type. ``photo``
+    and ``video`` are the built-in content types and are modelled explicitly here;
+    the endpoint also accepts a file under the name of any other enabled content
+    type.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    photo: Optional[FileStorage] = Field(None, description="An image file to hash")
+    video: Optional[FileStorage] = Field(None, description="A video file to hash")
