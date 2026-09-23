@@ -1,0 +1,235 @@
+{
+  "records": 20000,
+  "scale": 0.02,
+  "client_cpu_us_per_record": 5.7,
+  "rows": [
+    {
+      "scenario": "A: default model",
+      "config": "stock serial, page=100",
+      "secs": 8.45,
+      "speedup_vs_stock": 1.0,
+      "real_equiv_hours_for_1.4M": 8.22,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "A: default model",
+      "config": "1 worker, page=500",
+      "secs": 7.78,
+      "speedup_vs_stock": 1.09,
+      "real_equiv_hours_for_1.4M": 7.56,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "A: default model",
+      "config": "1 worker, page=1000",
+      "secs": 7.63,
+      "speedup_vs_stock": 1.11,
+      "real_equiv_hours_for_1.4M": 7.42,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "A: default model",
+      "config": "2 workers x8 shards, page=500",
+      "secs": 4.26,
+      "speedup_vs_stock": 1.98,
+      "real_equiv_hours_for_1.4M": 4.14,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "A: default model",
+      "config": "4 workers x8 shards, page=500",
+      "secs": 2.24,
+      "speedup_vs_stock": 3.78,
+      "real_equiv_hours_for_1.4M": 2.17,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "A: default model",
+      "config": "8 workers x8 shards, page=500",
+      "secs": 1.31,
+      "speedup_vs_stock": 6.45,
+      "real_equiv_hours_for_1.4M": 1.27,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "A: default model",
+      "config": "16 workers x8 shards, page=500",
+      "secs": 0.84,
+      "speedup_vs_stock": 10.04,
+      "real_equiv_hours_for_1.4M": 0.82,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "A: default model",
+      "config": "32 workers x8 shards, page=500",
+      "secs": 0.7,
+      "speedup_vs_stock": 12.14,
+      "real_equiv_hours_for_1.4M": 0.68,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "A: default model",
+      "config": "16 workers x1 shard (no over-partition)",
+      "secs": 1.15,
+      "speedup_vs_stock": 7.33,
+      "real_equiv_hours_for_1.4M": 1.12,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "A: default model",
+      "config": "16x8, page=500, types= filter",
+      "secs": 0.84,
+      "speedup_vs_stock": 10.07,
+      "real_equiv_hours_for_1.4M": 0.82,
+      "records_fetched": 18384,
+      "live_records": 17873
+    },
+    {
+      "scenario": "B: per-request-dominated model",
+      "config": "stock serial, page=100",
+      "secs": 8.39,
+      "speedup_vs_stock": 1.0,
+      "real_equiv_hours_for_1.4M": 8.16,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "B: per-request-dominated model",
+      "config": "1 worker, page=500",
+      "secs": 3.47,
+      "speedup_vs_stock": 2.42,
+      "real_equiv_hours_for_1.4M": 3.37,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "B: per-request-dominated model",
+      "config": "1 worker, page=1000",
+      "secs": 2.77,
+      "speedup_vs_stock": 3.03,
+      "real_equiv_hours_for_1.4M": 2.69,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "B: per-request-dominated model",
+      "config": "16 workers x8, page=1000",
+      "secs": 0.66,
+      "speedup_vs_stock": 12.79,
+      "real_equiv_hours_for_1.4M": 0.64,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "C: server concurrency cap = 3",
+      "config": "stock serial, page=100",
+      "secs": 8.4,
+      "speedup_vs_stock": 1.0,
+      "real_equiv_hours_for_1.4M": 8.16,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "C: server concurrency cap = 3",
+      "config": "4 workers x8, page=100",
+      "secs": 4.86,
+      "speedup_vs_stock": 1.73,
+      "real_equiv_hours_for_1.4M": 4.73,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "C: server concurrency cap = 3",
+      "config": "8 workers x8, page=100",
+      "secs": 3.27,
+      "speedup_vs_stock": 2.57,
+      "real_equiv_hours_for_1.4M": 3.18,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "C: server concurrency cap = 3",
+      "config": "16 workers x8, page=100",
+      "secs": 2.91,
+      "speedup_vs_stock": 2.89,
+      "real_equiv_hours_for_1.4M": 2.83,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "C: server concurrency cap = 3",
+      "config": "32 workers x8, page=100",
+      "secs": 3.0,
+      "speedup_vs_stock": 2.8,
+      "real_equiv_hours_for_1.4M": 2.92,
+      "records_fetched": 20000,
+      "live_records": 19448,
+      "mock_stats": {
+        "requests": 1252,
+        "throttled": 0,
+        "failed": 0,
+        "records_served": 100004
+      }
+    },
+    {
+      "scenario": "D: app request-rate cap ~= 3x serial rate",
+      "config": "stock serial, page=100",
+      "secs": 8.44,
+      "speedup_vs_stock": 1.0,
+      "real_equiv_hours_for_1.4M": 8.2,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "D: app request-rate cap ~= 3x serial rate",
+      "config": "4 workers x8, page=100",
+      "secs": 4.77,
+      "speedup_vs_stock": 1.77,
+      "real_equiv_hours_for_1.4M": 4.64,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "D: app request-rate cap ~= 3x serial rate",
+      "config": "8 workers x8, page=100",
+      "secs": 3.66,
+      "speedup_vs_stock": 2.3,
+      "real_equiv_hours_for_1.4M": 3.56,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "D: app request-rate cap ~= 3x serial rate",
+      "config": "16 workers x8, page=100",
+      "secs": 4.76,
+      "speedup_vs_stock": 1.77,
+      "real_equiv_hours_for_1.4M": 4.63,
+      "records_fetched": 20000,
+      "live_records": 19448
+    },
+    {
+      "scenario": "D: app request-rate cap ~= 3x serial rate",
+      "config": "32 workers x8, page=100",
+      "secs": 5.77,
+      "speedup_vs_stock": 1.46,
+      "real_equiv_hours_for_1.4M": 5.61,
+      "records_fetched": 20000,
+      "live_records": 19448,
+      "mock_stats": {
+        "requests": 1764,
+        "throttled": 512,
+        "failed": 0,
+        "records_served": 100004
+      }
+    }
+  ]
+}
