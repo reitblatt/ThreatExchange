@@ -1,0 +1,134 @@
+[
+  {
+    "n": 100000,
+    "records": 100000,
+    "pickle_dump_sec": 0.49,
+    "pickle_mb": 16.3,
+    "build_rss_mb": 234,
+    "pickle_load_sec": 0.53,
+    "pickle_load_rss_mb": 207,
+    "cli": [
+      {
+        "cmd": "tx dataset",
+        "wall_sec": 7.83,
+        "peak_rss_mb": 389,
+        "pickle_loads": 7,
+        "output_lines": 4
+      },
+      {
+        "cmd": "tx dataset -P --csv",
+        "wall_sec": 7.36,
+        "peak_rss_mb": 276,
+        "pickle_loads": 7,
+        "output_lines": 89615
+      },
+      {
+        "cmd": "tx dataset -P --csv -s pdq -t csam",
+        "wall_sec": 0.88,
+        "peak_rss_mb": 241,
+        "pickle_loads": 1,
+        "output_lines": 15440
+      },
+      {
+        "cmd": "tx dataset --rebuild-indices",
+        "wall_sec": 7.13,
+        "peak_rss_mb": 448,
+        "pickle_loads": 7,
+        "output_lines": 0
+      }
+    ],
+    "sqlite_full_write_sec": 0.32,
+    "sqlite_mb": 40.9,
+    "sqlite_page_upsert_ms": 11.1,
+    "sqlite_filter_to_csv_sec": 0.05,
+    "sqlite_filter_rows": 15439
+  },
+  {
+    "n": 400000,
+    "records": 400000,
+    "pickle_dump_sec": 2.12,
+    "pickle_mb": 65.3,
+    "build_rss_mb": 756,
+    "pickle_load_sec": 2.25,
+    "pickle_load_rss_mb": 737,
+    "cli": [
+      {
+        "cmd": "tx dataset",
+        "wall_sec": 30.45,
+        "peak_rss_mb": 1273,
+        "pickle_loads": 7,
+        "output_lines": 4
+      },
+      {
+        "cmd": "tx dataset -P --csv",
+        "wall_sec": 32.49,
+        "peak_rss_mb": 896,
+        "pickle_loads": 7,
+        "output_lines": 358242
+      },
+      {
+        "cmd": "tx dataset -P --csv -s pdq -t csam",
+        "wall_sec": 3.96,
+        "peak_rss_mb": 771,
+        "pickle_loads": 1,
+        "output_lines": 62456
+      },
+      {
+        "cmd": "tx dataset --rebuild-indices",
+        "wall_sec": 31.09,
+        "peak_rss_mb": 1434,
+        "pickle_loads": 7,
+        "output_lines": 0
+      }
+    ],
+    "sqlite_full_write_sec": 1.31,
+    "sqlite_mb": 164.0,
+    "sqlite_page_upsert_ms": 11.2,
+    "sqlite_filter_to_csv_sec": 0.23,
+    "sqlite_filter_rows": 62455
+  },
+  {
+    "n": 1400000,
+    "records": 1399999,
+    "pickle_dump_sec": 9.91,
+    "pickle_mb": 228.7,
+    "build_rss_mb": 2599,
+    "pickle_load_sec": 8.99,
+    "pickle_load_rss_mb": 2456,
+    "cli": [
+      {
+        "cmd": "tx dataset",
+        "wall_sec": 113.16,
+        "peak_rss_mb": 4373,
+        "pickle_loads": 7,
+        "output_lines": 4
+      },
+      {
+        "cmd": "tx dataset -P --csv",
+        "wall_sec": 114.31,
+        "peak_rss_mb": 2900,
+        "pickle_loads": 7,
+        "output_lines": 1253382
+      },
+      {
+        "cmd": "tx dataset -P --csv -s pdq -t csam",
+        "wall_sec": 11.82,
+        "peak_rss_mb": 2489,
+        "pickle_loads": 1,
+        "output_lines": 218341
+      },
+      {
+        "cmd": "tx dataset --rebuild-indices",
+        "wall_sec": 110.76,
+        "peak_rss_mb": 4574,
+        "pickle_loads": 7,
+        "output_lines": 0
+      }
+    ],
+    "sqlite_full_write_sec": 4.67,
+    "sqlite_mb": 575.3,
+    "sqlite_page_upsert_ms": 15.2,
+    "sqlite_filter_to_csv_sec": 1.0,
+    "sqlite_filter_rows": 218340
+  }
+]
