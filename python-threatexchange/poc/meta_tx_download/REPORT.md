@@ -31,7 +31,7 @@ Each claim below is tagged **[measured]**, **[code]** (read directly from source
 
 | # | Finding | Value to Marc & users | Cost | Recommendation |
 |---|---|---|---|---|
-| 1 | Graph API **v21.0 is hardcoded and expires 2027-01-21** [docs, code] | Critical: after that date `tx fetch` (and HMA's TE fetcher) stop working for everyone | ~1 line (+ make it configurable) | **Do now** |
+| 1 | ~~Graph API **v21.0 is hardcoded and expires 2027-01-21**~~ [docs, code] | Critical: after that date `tx fetch` (and HMA's TE fetcher) would have stopped working for everyone | ~1 line | **Done: bumped to v26.0 in #2007** (all hardcoded versions repo-wide; not yet exercised with a real token). Still open: make the version configurable |
 | 2 | **GET retries and timeouts have never been active.** `get_json_from_url` calls `requests.get`, not the retrying session. This has been true since Feb 2021 (#372) [code, measured] | High: an unattended multi-hour download dies on the first transient 5xx, or hangs forever on a stalled socket | ~1 line to fix the typo; ~50 lines to do it properly | **Do now** |
 | 3 | `tx dataset` **unpickles the whole collab once per signal type** (7×), and cyclic GC thrashes during each load [measured] | High: 113s → **9.4s** and 4.4 GB → 2.5 GB RSS at 1.4M records. This also hits the index rebuild that runs after *every* `tx fetch` | Small: cache the store in `CLISettings`, pause GC around `pickle.load` | **Do now** |
 | 4 | Marc's filter → CSV gap: no filtering by category, owner, tag-all/none, or raw TE type; no column choice; no per-opinion rows [code] | High: this *is* Marc's stated need | Small–medium (PoC `export_csv.py` is ~250 lines incl. docs) | **Do next** (issue drafted) |
@@ -243,14 +243,14 @@ At 1.4M synthetic records, three typical queries took 13–25s wall time and 2.5
 
 **What's wrong today** [code]:
 
-1. **The Graph API version is pinned to `v21.0`, which expires 2027-01-21.** The last bump (#1647, Oct 2024) was a one-line change.
+1. **The Graph API version was pinned to `v21.0`, which expires 2027-01-21.** *Resolved by #2007, which moved every hardcoded version (py-tx and the older example clients) to `v26.0`.* The version is still a hardcoded constant, so the next expiry needs another code change.
 2. The retry, timeout, and session bug from §a. The retry policy would also be wrong if it ran: no Graph throttle codes, and about 1.5s of total backoff.
 3. `api.py` begins "This is an entire copy of a file from ThreatExchange/hashing. TODO: Slim down to only what we need". It is 656 lines of mostly untyped, dict-in/dict-out code. Of its methods, only `get_threat_updates`, the privacy-group lookups, and `get_json_from_url` have callers in this repo (CLI + HMA).
 4. The descriptor write paths (upload, copy, react, delete), `get_tag_id`, and `get_threat_descriptors` have no callers in this repo. They are still public API for pip users.
 5. `threat_updates.py`'s `ThreatUpdatesDelta`, `ThreatUpdatesStore`, and `ThreatUpdateFileStore`, including a `split()` "parallelization trick" that looks broken (`new_start` never advances), have no callers outside their own file. The same goes for `cli/dataset/simple_serialization.py` (`CliIndicatorSerialization`, `HMASerialization`, for the retired AWS HMA).
 6. HTTP errors surface as bare `HTTPError`, and the Graph `error` JSON that explains the failure is lost.
 
-**Cost to users:** items 1 and 2 are the real harm. Items 3–6 cost maintainers and confuse readers; they don't cost users.
+**Cost to users:** items 1 (now fixed) and 2 are the real harm. Items 3–6 cost maintainers and confuse readers; they don't cost users.
 
 **What a v2 would involve** [estimate]:
 
@@ -259,13 +259,15 @@ At 1.4M synthetic records, three typical queries took 13–25s wall time and 2.5
 - deleting or deprecating the dead code
 - keeping `FBThreatExchangeSignalExchangeAPI`'s public surface stable, since HMA depends on it
 
-**Recommendation: don't do a v2 now.** Do the targeted fixes: the version bump plus a configurable version, and issue a1. They deliver about 90% of the user value in about a day. Revisit a v2 only if the (a2) probe says the two-phase ids-then-lookup fetch is the way forward, because that needs a new request pattern anyway. Mark the dead code deprecated in the meantime.
+**Recommendation: don't do a v2 now.** Do the targeted fixes: a configurable version (the bump itself is done), and issue a1. They deliver about 90% of the user value in about a day. Revisit a v2 only if the (a2) probe says the two-phase ids-then-lookup fetch is the way forward, because that needs a new request pattern anyway. Mark the dead code deprecated in the meantime.
 
-### Draft issue (b): Graph API version expiry
+### Draft issue (b): make the Graph API version configurable
 
-> **Title:** `[pytx] Graph API v21.0 expires 2027-01-21: bump and make configurable`
+The expiry itself was handled by #2007 (v21.0 → v26.0). What remains:
+
+> **Title:** `[pytx] Make the Graph API version configurable`
 >
-> `ThreatExchangeAPI._TE_BASE_URL` is hardcoded to `https://graph.facebook.com/v21.0`. Per Meta's version table, v21.0 is available until 2027-01-21, and the current version is v26.0. After that date, `tx fetch` and HMA's ThreatExchange fetcher stop working. Bump to a current version, run the TE e2e path with a real token, and allow an override (env var or constructor argument) so the next expiry doesn't need a release.
+> `ThreatExchangeAPI._TE_BASE_URL` hardcodes `https://graph.facebook.com/v26.0`. Meta retires each version roughly two years after release, so the next expiry needs another release. Allow an override (env var or constructor argument). Separately, nobody has yet run the TE e2e path (`config api -L`, `fetch`) against v26.0 with a real token.
 
 ---
 
@@ -330,7 +332,7 @@ It removes the memory ceiling and makes the data directly queryable by other too
 1. **"Parallelize → 7 h to 30 min."** Parallelizing is technically possible, but the 14× assumes Meta serves many concurrent heavy queries with no throttling. Meta's own docs say the slowness is server-side nested-field resolution, and Graph API throttling meters CPU time per app. The PoC reaches 14× in *no* configuration, even on an unthrottled mock; the best was 12× with 32 streams. Under any cap, the speedup is the cap, and oversubscribing makes it worse. Meta's documented speedup is a *different* technique (two-phase fetch). Treat 30 minutes as unverified.
 2. **"Some opportunity to harden with error handling and retries."** It's more specific and more urgent than that: **retries and timeouts are completely inactive** because of a one-line bug that has been live since 2021. On the other hand, a mid-download failure does *not* lose progress; the run resumes from its checkpoint. The real costs are unattended runs stopping early and runs that can hang forever.
 3. **"The pickle storage is slow."** Mostly it's that the CLI loads the pickle 7× and GC thrashes during each load, which is fixable in a few lines (12× faster at 1.4M records). Pickle's real problems are memory, opacity, version fragility, and safety, not raw speed. It is also *smaller* on disk than a naive SQLite layout.
-4. **"The oldest code might benefit from a v2."** The urgent issue in the old client is not its age but a **hard deadline**: Graph API v21.0 expires 2027-01-21, about 4 months from now, and that also breaks HMA's ThreatExchange fetcher.
+4. **"The oldest code might benefit from a v2."** The urgent issue in the old client was not its age but a **hard deadline**: Graph API v21.0 expires 2027-01-21, which would also have broken HMA's ThreatExchange fetcher. That is now fixed by #2007 (bump to v26.0). The remaining problem in the old client is the inactive retry/timeout code.
 5. **"More slicing options."** Some of what Marc may want is not a CLI-options problem. `last_updated`, `added_on`, description, and similar fields are **discarded at fetch time**, so no filter flag can expose them.
 
 ## End-to-end validation: what access is needed
