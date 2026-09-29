@@ -8,6 +8,8 @@ TODO: Slim down to only what we need
 
 import copy
 import json
+import logging
+import time
 import typing as t
 import re
 
@@ -25,6 +27,25 @@ from threatexchange.exchanges.clients.utils.common import TimeoutHTTPAdapter
 def is_valid_app_token(token: str) -> bool:
     """Returns true if the string looks like a valid token"""
     return bool(re.match("[0-9]{8,}(?:%7C|\\|)[a-zA-Z0-9_\\-]{20,}", token))
+
+
+# Graph API errors that mean "you are being rate limited". They arrive as an HTTP
+# 4xx with the code in the JSON body, so the session's status-based Retry can't
+# see them.
+# https://developers.facebook.com/docs/graph-api/overview/rate-limiting/
+_THROTTLE_ERROR_CODES = frozenset({4, 17, 32, 613})
+# Rate limits are rolling windows, so wait in minutes rather than seconds.
+# Total wait before giving up: ~7.5 minutes.
+_THROTTLE_BACKOFF_SEC = (15, 30, 60, 120, 240)
+
+
+def _is_throttled(response: requests.Response) -> bool:
+    if response.ok:
+        return False
+    try:
+        return response.json()["error"]["code"] in _THROTTLE_ERROR_CODES
+    except (ValueError, KeyError, TypeError):
+        return False
 
 
 class _CursoredResponse:
@@ -112,10 +133,19 @@ class ThreatExchangeAPI:
     ):
         """
         Perform an HTTP GET request, and return the JSON response payload.
-        Same timeouts and retry strategy as `_get_session` above.
+
+        Uses the timeouts and retries of `_get_session`, and additionally waits
+        and retries when the Graph API reports rate limiting.
+
+        Raises requests.HTTPError if the request still fails after retrying.
         """
-        with self._get_session() as _session:
-            response = requests.get(url, params=params or {})  # !!! Typo? session.get?
+        with self._get_session() as session:
+            for delay in (*_THROTTLE_BACKOFF_SEC, None):
+                response = session.get(url, params=params or {})
+                if delay is None or not _is_throttled(response):
+                    break
+                logging.warning("ThreatExchange throttled us, retrying in %ds", delay)
+                time.sleep(delay)
             response.raise_for_status()
             return response.json(object_hook=json_obj_hook)
 
@@ -133,15 +163,21 @@ class ThreatExchangeAPI:
         the returned value.
         """
         session = requests.Session()
+        # Mount on the origin rather than the versioned base URL, so that
+        # `paging.next` URLs from the API always get the adapter too.
+        base = urllib.parse.urlparse(self._base_url)
         session.mount(
-            self._base_url,
+            f"{base.scheme}://{base.netloc}",
             adapter=TimeoutHTTPAdapter(
                 timeout=60,
                 max_retries=Retry(
-                    total=4,
+                    total=5,
                     status_forcelist=[429, 500, 502, 503, 504],
                     allowed_methods=["HEAD", "GET", "OPTIONS"],
-                    backoff_factor=0.2,  # ~1.5 seconds of retries
+                    backoff_factor=1,  # 0, 2, 4, 8, 16s: ~30 seconds of retries
+                    # Hand the last response back so raise_for_status() reports
+                    # the HTTP error, rather than urllib3's RetryError.
+                    raise_on_status=False,
                 ),
             ),
         )
