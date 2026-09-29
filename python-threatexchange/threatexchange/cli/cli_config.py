@@ -192,6 +192,10 @@ class _FetchStoreAccessor:
     """Convenience wrapper for operations on the state"""
 
     _parent: "CLISettings"
+    # A store holds the loaded state in memory, so hand out one per API. Making
+    # a new one each time meant every caller reloaded the whole dataset from disk
+    # (`dataset` did it once per signal type).
+    _stores: t.Dict[str, CliSimpleState] = field(default_factory=dict, init=False)
 
     def empty(self) -> bool:
         """Return the collabs with stored state"""
@@ -201,7 +205,11 @@ class _FetchStoreAccessor:
         )
 
     def get_for_api(self, api: t.Type[SignalExchangeAPI]) -> CliSimpleState:
-        return CliSimpleState(api, self._parent._state.dir_for_fetched_state(api))
+        store = self._stores.get(api.get_name())
+        if store is None:
+            store = CliSimpleState(api, self._parent._state.dir_for_fetched_state(api))
+            self._stores[api.get_name()] = store
+        return store
 
     def get_for_collab(
         self, collab: collab_config.CollaborationConfigBase

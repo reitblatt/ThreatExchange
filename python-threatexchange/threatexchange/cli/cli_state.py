@@ -10,6 +10,7 @@ There are a few categories of state that this wraps:
   3. Index state - serializations of indexes for SignalType
 """
 
+import gc
 import pickle
 import pathlib
 import typing as t
@@ -30,6 +31,23 @@ from threatexchange.exchanges.signal_exchange_api import (
 )
 from threatexchange.signal_type import signal_base
 from threatexchange.signal_type import index
+
+
+def _load_pickle(f: t.BinaryIO) -> t.Any:
+    """
+    pickle.load() with the cyclic garbage collector paused.
+
+    Unpickling allocates millions of small objects, and the collector keeps
+    rescanning all of them while it does, which took over half of the load
+    time on large datasets. Nothing being loaded is garbage.
+    """
+    was_enabled = gc.isenabled()
+    gc.disable()
+    try:
+        return pickle.load(f)
+    finally:
+        if was_enabled:
+            gc.enable()
 
 
 class CliIndexStore:
@@ -138,7 +156,7 @@ class CliSimpleState(helpers.SimpleFetchedStateStore):
             return None
         try:
             with file.open("rb") as f:
-                delta = pickle.load(f)
+                delta = _load_pickle(f)
 
             assert isinstance(delta, FetchDelta), "Unexpected class type?"
             assert (
