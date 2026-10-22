@@ -10,6 +10,7 @@ from sqlalchemy import select
 from OpenMediaMatch.tests.utils import app
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.background_tasks import fetcher, build_index
+from OpenMediaMatch.blueprints import ui
 
 from threatexchange.exchanges import fetch_state
 from threatexchange.exchanges import auth
@@ -357,6 +358,87 @@ class _UnknownSampleExchangeAPI(StaticSampleSignalExchangeAPI):
         ],
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, fetch_state.TFetchedSignalMetadata]]:
         return {}
+
+
+@dataclass
+class _IncompleteCheckpoint(fetch_state.FetchCheckpointBase):
+    ts: int
+    incomplete: t.List[t.Tuple[int, int]]
+
+    def get_progress_timestamp(self) -> t.Optional[int]:
+        return self.ts
+
+    def get_incomplete_ranges(self) -> t.Sequence[t.Tuple[int, int]]:
+        return self.incomplete
+
+
+class _IncompleteExchangeAPI(StaticSampleSignalExchangeAPI):
+    """Catches up, but with a range it couldn't fetch, e.g. bad API data"""
+
+    @classmethod
+    def get_name(cls) -> str:
+        return "sample_incomplete"
+
+    @staticmethod
+    def get_checkpoint_cls() -> t.Type[_IncompleteCheckpoint]:  # type: ignore[override]
+        return _IncompleteCheckpoint
+
+    def fetch_iter(self, _supported_signal_types, checkpoint):
+        yield fetch_state.FetchDelta(
+            _FakeUpdateMaker().get_multi(3), _IncompleteCheckpoint(2000, [(0, 600)])
+        )
+
+
+def test_fetch_status_shows_incomplete_ranges(
+    storage: DefaultOMMStore,
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+):
+    # The migration test runs alembic's fileConfig(), which disables
+    # existing loggers, including the fetcher's
+    monkeypatch.setattr(fetcher.logger, "disabled", False)
+    patched_exchange_types = dict(storage.exchange_types)
+    patched_exchange_types[_IncompleteExchangeAPI.get_name()] = t.cast(
+        TSignalExchangeAPICls, _IncompleteExchangeAPI
+    )
+    storage.exchange_types = patched_exchange_types
+    cfg = make_collab(
+        storage, api=t.cast(TSignalExchangeAPICls, _IncompleteExchangeAPI)
+    )
+
+    fetch(storage)
+    assert (
+        "Fetched all new data, but 1 earlier range(s) are still missing and will "
+        "be retried: 1970-01-01 00:00:00 - 1970-01-01 00:10:00 UTC"
+    ) in caplog.text
+    assert "Fetched all data! Up to date!" not in caplog.text
+
+    status = storage.exchange_get_fetch_status(cfg.name)
+    assert status.up_to_date
+    assert status.incomplete_ranges == [(0, 600)]
+
+    resp = app.test_client().get(f"/c/exchange/{cfg.name}/status")
+    assert resp.status_code == 200
+    assert resp.get_json()["incomplete_ranges"] == [[0, 600]]
+
+    info = ui._collab_info()[cfg.name]
+    assert info["progress_label"] == "Up to date, 1 range(s) missing"
+    assert "bg-warning" in info["progress_style"]
+    assert info["progress_title"] == (
+        "Not fetched yet, retried on every fetch: "
+        "1970-01-01 00:00:00 - 1970-01-01 00:10:00 UTC"
+    )
+
+
+def test_fetch_status_without_incomplete_ranges(storage: DefaultOMMStore):
+    cfg = make_collab(storage)
+    fetch(storage)
+    status = storage.exchange_get_fetch_status(cfg.name)
+    assert status.incomplete_ranges == []
+    info = ui._collab_info()[cfg.name]
+    assert info["progress_label"] == "Up to date!"
+    assert info["progress_title"] == ""
 
 
 def test_exchange_type_confg(storage: DefaultOMMStore):

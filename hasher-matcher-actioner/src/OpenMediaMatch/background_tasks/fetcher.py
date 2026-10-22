@@ -18,7 +18,10 @@ from OpenMediaMatch.background_tasks.development import get_apscheduler
 from OpenMediaMatch.persistence import get_storage
 from threatexchange.storage.interfaces import ISignalExchangeStore
 from threatexchange.storage.interfaces import SignalTypeConfig
-from OpenMediaMatch.utils.time_utils import duration_to_human_str
+from OpenMediaMatch.utils.time_utils import (
+    duration_to_human_str,
+    time_ranges_to_human_str,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -199,7 +202,17 @@ def _fetch(
             break
     else:
         up_to_date = True
-        log("Fetched all data! Up to date!")
+        incomplete = [] if checkpoint is None else checkpoint.get_incomplete_ranges()
+        if incomplete:
+            log(
+                "Fetched all new data, but %d earlier range(s) are still "
+                "missing and will be retried: %s",
+                len(incomplete),
+                time_ranges_to_human_str(incomplete),
+                level=logger.warning,
+            )
+        else:
+            log("Fetched all data! Up to date!")
 
     if pending_merge is not None:
         log("Committing progress...")

@@ -369,6 +369,10 @@ class DefaultOMMStore(IFlaskUnifiedStore):
             statement.with_only_columns(func.count()).order_by(None)
         ).scalar()
         ret.fetched_items = count or 0
+
+        checkpoint = collab_config.as_checkpoint(self.exchange_apis_get_installed())
+        if checkpoint is not None:
+            ret.incomplete_ranges = list(checkpoint.get_incomplete_ranges())
         return ret
 
     def exchange_get_fetch_checkpoint(

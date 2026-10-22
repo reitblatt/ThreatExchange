@@ -810,6 +810,10 @@ def exchange_get_fetch_status(path: ExchangePathParams):
       * last_fetch_succeeded: whether the last fetch finished without error
       * up_to_date: whether the last fetch reached the end of available data
       * fetched_items: number of items fetched
+      * incomplete_ranges: [start, end) unix time ranges before checkpoint_ts
+        that haven't been fetched yet (e.g. skipped because the API returned
+        bad data), which are retried on every fetch. While there are any,
+        fetched data is incomplete even if up_to_date is true
 
     {
         "enabled": true,
@@ -818,7 +822,8 @@ def exchange_get_fetch_status(path: ExchangePathParams):
         "last_fetch_complete_ts": 1692397383,
         "last_fetch_succeeded": true,
         "up_to_date": true,
-        "fetched_items": 0
+        "fetched_items": 0,
+        "incomplete_ranges": []
     }
     """
     collab = _get_collab(path.exchange_name)

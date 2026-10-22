@@ -11,7 +11,10 @@ from flask import request, redirect
 from OpenMediaMatch.blueprints import matching, curation, hashing
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.utils import exchange_credentials
-from OpenMediaMatch.utils.time_utils import duration_to_human_str
+from OpenMediaMatch.utils.time_utils import (
+    duration_to_human_str,
+    time_ranges_to_human_str,
+)
 from OpenMediaMatch.schemas.ui import (
     BankFindContentRequest,
     BankFindContentResponse,
@@ -76,6 +79,18 @@ def _collab_info() -> dict[str, dict[str, t.Any]]:
         # TODO add some idea of progress to the checkpoint class
 
         progress_style = "bg-success" if progress == 100 else "bg-info"
+        progress_title = ""
+        incomplete = fetch_status.incomplete_ranges
+        if incomplete:
+            # e.g. skipped because the API returned bad data
+            progress_title = (
+                "Not fetched yet, retried on every fetch: "
+                + time_ranges_to_human_str(incomplete)
+            )
+            if fetch_status.up_to_date:
+                progress_style = "bg-warning text-dark"
+                progress_label = f"Up to date, {len(incomplete)} range(s) missing"
+
         if fetch_status.last_fetch_succeeded is False:
             progress_style = "bg-danger"
             progress_label = "Error on fetch!"
@@ -104,6 +119,7 @@ def _collab_info() -> dict[str, dict[str, t.Any]]:
             "progress_style": progress_style,
             "progress_pct": progress,
             "progress_label": progress_label,
+            "progress_title": progress_title,
             "last_run_text": last_run_text,
         }
     return ret
